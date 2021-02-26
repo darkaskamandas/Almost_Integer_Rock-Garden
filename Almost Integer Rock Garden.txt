@@ -1,0 +1,313 @@
+import java.io.*;
+import java.util.*;
+import java.text.*;
+import java.math.*;
+import java.util.regex.*;
+
+public class Solution {
+
+	static class P {
+		int x;
+		int y;
+		double d;
+		int c;
+	}
+	
+	static P[] ps;
+	
+	static int getPIndex(int x, int y) {
+		if(y > x) {
+			int c = x;
+			x = y;
+			y = c;
+		}
+		for (int i = 0; i < ps.length; i++) {
+			if(ps[i].x == x && ps[i].y == y) return i;
+		}
+		return -1;
+	}
+	
+	static class F implements Comparable<F>{
+		int[] pi = new int[4];
+		double d;
+
+		@Override
+		public int compareTo(F o) {
+			return d < o.d ? -1 : d > o.d ? 1 : 0;
+		}
+	}
+	
+	static F[] fs;
+	
+	static int getFIndex(double d) {
+		int c0 = (int)(d * fs.length);
+		int a = c0 < 30000 ? 0 : c0 - 30000;
+		while(fs[a].d > d) {
+			a -= 30000;
+			if(a < 0) {
+				a = 0;
+				break;
+			}
+		}
+		int b = c0 + 30000 >= fs.length - 1 ? fs.length - 1 : c0 + 30000;
+		while(fs[b].d < d) {
+			b += 30000;
+			if(b >= fs.length - 1) {
+				b = fs.length - 1;
+				break;
+			}
+		}
+//		if(fs[a].d > d || fs[b].d < d) throw new RuntimeException();
+		while(b - a > 1) {
+			int c = (a + b) / 2;
+			if(d > fs[c].d) {
+				a = c;
+			} else {
+				b = c;
+			}
+		}
+		return Math.abs(d - fs[a].d) < Math.abs(d - fs[b].d) ? a : b;
+	}
+	
+	static void buildP() {
+		List<P> list = new ArrayList<>();
+		for (int x = 1; x <= 12; x++) {
+			for (int y = 1; y <= x; y++) {
+				int d2 = x * x + y * y;
+				double d = Math.sqrt(d2);
+				int di = (int)Math.round(d);
+				if(di * di == d2) continue;
+				int c = x == y ? 4 : 8;
+				P p = new P();
+				p.x = x;
+				p.y = y;
+				p.d = d - Math.floor(d);
+				p.c = c;
+				list.add(p);
+			}
+		}
+		ps = list.toArray(new P[list.size()]);
+//		for (P p: ps) {
+//			System.out.println(p.x + " " + p.y + " " + p.d + " " + p.c);
+//		}
+//		System.out.println(ps.length);
+	}
+	
+	static void buildF() {
+		int size = 74 * 75 * 76 * 77 / 24;
+		fs = new F[size];
+		int k = 0;
+		for (int i1 = 0; i1 < ps.length; i1++) {
+			for (int i2 = i1; i2 < ps.length; i2++) {
+				for (int i3 = i2; i3 < ps.length; i3++) {
+					for (int i4 = i3; i4 < ps.length; i4++) {
+						F f = new F();
+						f.pi = new int[]{i1,i2,i3,i4};
+						f.d = ps[i1].d + ps[i2].d + ps[i3].d + ps[i4].d;
+						f.d = f.d - Math.floor(f.d);
+						fs[k] = f;
+						k++;
+					}
+				}
+			}
+		}
+		Arrays.sort(fs);
+	}
+
+	static Random seed = new Random();
+
+	static class Result {
+		int[] result = new int[12];
+		double d12 = 0;
+		
+		Result(int i0) {
+			result[0] = i0;
+		}
+		
+		boolean flip() {
+			int k = seed.nextInt(7) + 1;
+			int ik = seed.nextInt(74);
+			result[k] = ik;
+			d12 = 0;
+			for (k = 0; k < 8; k++) {
+				d12 += ps[result[k]].d;
+			}
+			d12 = d12 - Math.floor(d12);
+			double add = 1 - d12;
+			int fi = getFIndex(add);
+			double d12r = d12 + fs[fi].d;
+			d12r = d12r - Math.floor(d12r);
+			if(d12r > 0.000000000001 && 1 - d12r > 0.000000000001) {
+				return false;
+			}
+			for (k = 0; k < 4; k++) {
+				result[k + 8] = fs[fi].pi[k];
+			}
+			d12 = d12r;
+//			System.out.println(d12);
+			return true;
+		}
+	}
+	
+	static boolean checkResult(int[] result) {
+		int[] dist = new int[ps.length];
+		for (int i = 0; i < result.length; i++) {
+			if(i > 0 && result[i] == result[0]) return false; //for simplicity
+			dist[result[i]]++;
+			if(dist[result[i]] > 4) return false;
+		}
+		return true;
+	}
+	
+	static void presentResult(int[] result, int x0, int y0) {
+		int[] dist = new int[ps.length];
+		dist[result[0]]++;
+		double d = ps[result[0]].d;
+		for (int i = 1; i < result.length; i++) {
+			int k = result[i];
+			dist[k]++;
+			int c = dist[k];
+				int x = ps[k].x, y = ps[k].y;
+				int d2 = x * x + y * y;
+				d += Math.sqrt(d2);
+			if(c == 1) {
+				System.out.println(ps[k].x + " " + ps[k].y);
+			} else if(c == 2) {
+				System.out.println((-ps[k].x) + " " + ps[k].y);
+			} else if(c == 3) {
+				System.out.println(ps[k].x + " " + (-ps[k].y));
+			} else if(c == 4) {
+				System.out.println((-ps[k].x) + " " + (-ps[k].y));
+			}
+		}
+//		System.out.println("d=" + d);
+	}
+	
+	public static void solve(int x, int y) {
+		int xc = Math.abs(x), yc = Math.abs(y);
+		int i0 = getPIndex(xc, yc);
+		Result r = new Result(i0);
+		while(true) {
+			if(r.flip()) {
+				int[] result = r.result;
+				if(result == null || !checkResult(result)) continue;
+				double d = 0;
+				System.out.print("{");
+				for (int k = 0; k < 12; k++) {
+					if(k > 0) System.out.print(", ");
+					System.out.print(result[k]);
+					d += ps[result[k]].d;
+				}
+				System.out.println("},");
+//				presentResult(result, x, y);
+				break;
+			}
+		}
+	}
+	
+	static void buildCache() {
+		buildF();
+//		long t = System.currentTimeMillis();
+		for (int i = 0; i < ps.length; i++) {
+			solve(ps[i].x, ps[i].y);
+		}	
+//		long dt = System.currentTimeMillis() - t;
+//		System.out.println(dt);
+	}
+	
+	static void solveWithCache(int x, int y) {
+		int xc = Math.abs(x), yc = Math.abs(y);
+		int i0 = getPIndex(xc, yc);
+		presentResult(cache[i0], xc, yc);
+	}
+	
+	static void run() {
+		buildP();
+		Scanner in = new Scanner(System.in);
+		int x = in.nextInt();
+		int y = in.nextInt();
+		solveWithCache(x, y);
+	}
+
+	public static void main(String[] args) {
+		run();
+	}
+
+	//Cache is built in 145 sec which is less than 2 seconds per one case
+	static int[][] cache = {
+		{0, 8, 40, 44, 24, 39, 3, 39, 4, 9, 18, 68},
+		{1, 36, 61, 35, 19, 34, 64, 43, 37, 50, 72, 72},
+		{2, 68, 33, 10, 68, 44, 62, 32, 37, 37, 43, 44},
+		{3, 55, 20, 39, 1, 17, 9, 47, 17, 18, 24, 44},
+		{4, 9, 71, 35, 56, 49, 15, 58, 24, 32, 34, 40},
+		{5, 69, 43, 22, 8, 36, 40, 57, 4, 54, 69, 69},
+		{6, 28, 37, 67, 50, 3, 37, 13, 37, 56, 64, 67},
+		{7, 39, 3, 0, 9, 18, 40, 70, 8, 24, 30, 44},
+		{8, 70, 9, 68, 24, 39, 9, 55, 0, 3, 9, 18},
+		{9, 1, 24, 0, 55, 70, 39, 3, 8, 18, 44, 54},
+		{10, 43, 37, 5, 37, 68, 32, 44, 26, 44, 62, 68},
+		{11, 51, 52, 31, 63, 32, 14, 40, 37, 38, 48, 48},
+		{12, 50, 3, 45, 45, 23, 70, 72, 23, 32, 32, 48},
+		{13, 68, 39, 17, 18, 4, 9, 24, 3, 4, 44, 55},
+		{14, 37, 51, 48, 55, 73, 11, 38, 31, 32, 42, 48},
+		{15, 69, 69, 43, 47, 55, 26, 3, 4, 22, 57, 69},
+		{16, 3, 44, 9, 1, 70, 24, 13, 7, 18, 39, 55},
+		{17, 4, 55, 70, 1, 44, 9, 13, 3, 18, 24, 54},
+		{18, 24, 9, 20, 4, 44, 70, 55, 3, 16, 16, 17},
+		{19, 36, 25, 72, 1, 37, 34, 72, 41, 43, 50, 61},
+		{20, 50, 36, 56, 15, 15, 15, 64, 37, 37, 37, 66},
+		{21, 71, 71, 64, 30, 42, 27, 56, 28, 58, 60, 71},
+		{22, 1, 4, 43, 69, 26, 36, 69, 30, 55, 57, 69},
+		{23, 48, 29, 70, 47, 36, 27, 46, 8, 10, 24, 65},
+		{24, 9, 68, 39, 70, 9, 40, 3, 0, 8, 9, 18},
+		{25, 55, 71, 15, 56, 49, 32, 58, 4, 9, 24, 34},
+		{26, 22, 47, 69, 40, 69, 69, 4, 3, 15, 43, 57},
+		{27, 8, 29, 54, 48, 24, 65, 10, 23, 36, 46, 70},
+		{28, 60, 23, 30, 58, 56, 64, 21, 42, 71, 71, 71},
+		{29, 68, 50, 45, 68, 57, 30, 70, 23, 48, 60, 60},
+		{30, 44, 3, 17, 39, 9, 13, 24, 7, 17, 18, 55},
+		{31, 42, 14, 48, 48, 73, 38, 40, 11, 32, 37, 51},
+		{32, 4, 35, 15, 58, 9, 40, 24, 34, 49, 56, 71},
+		{33, 21, 72, 21, 49, 48, 53, 61, 35, 36, 37, 65},
+		{34, 40, 32, 58, 71, 4, 56, 49, 9, 15, 24, 25},
+		{35, 4, 55, 15, 34, 58, 9, 32, 24, 49, 56, 71},
+		{36, 15, 37, 37, 67, 2, 50, 64, 5, 37, 56, 66},
+		{37, 31, 14, 38, 42, 55, 48, 32, 11, 48, 51, 73},
+		{38, 48, 11, 32, 55, 31, 42, 51, 14, 37, 48, 73},
+		{39, 70, 2, 44, 16, 18, 16, 3, 5, 9, 24, 55},
+		{40, 39, 24, 44, 8, 9, 3, 68, 0, 4, 18, 39},
+		{41, 37, 1, 61, 19, 50, 43, 72, 25, 34, 36, 72},
+		{42, 38, 37, 11, 31, 14, 48, 32, 48, 51, 55, 73},
+		{43, 36, 57, 69, 19, 47, 69, 4, 0, 22, 55, 69},
+		{44, 24, 17, 17, 30, 55, 39, 18, 3, 7, 9, 20},
+		{45, 60, 70, 27, 60, 47, 29, 54, 48, 50, 57, 68},
+		{46, 47, 10, 65, 29, 23, 27, 70, 8, 24, 36, 48},
+		{47, 9, 17, 3, 17, 24, 18, 55, 1, 20, 39, 44},
+		{48, 72, 51, 9, 54, 56, 71, 34, 19, 22, 50, 59},
+		{49, 24, 71, 4, 15, 32, 35, 56, 9, 34, 40, 58},
+		{50, 5, 36, 41, 36, 66, 2, 56, 36, 37, 37, 37},
+		{51, 52, 14, 48, 55, 48, 38, 32, 11, 31, 37, 63},
+		{52, 31, 37, 48, 63, 40, 32, 11, 14, 38, 48, 51},
+		{53, 3, 46, 71, 45, 70, 69, 55, 0, 11, 30, 34},
+		{54, 52, 68, 32, 10, 37, 37, 62, 1, 43, 44, 44},
+		{55, 9, 30, 7, 20, 70, 4, 44, 3, 17, 18, 24},
+		{56, 67, 37, 13, 3, 36, 64, 50, 3, 37, 37, 66},
+		{57, 5, 55, 22, 43, 4, 47, 8, 36, 69, 69, 69},
+		{58, 71, 34, 15, 40, 35, 4, 49, 9, 24, 32, 56},
+		{59, 71, 9, 72, 56, 19, 51, 50, 22, 34, 48, 54},
+		{60, 71, 56, 42, 28, 23, 30, 41, 21, 58, 71, 71},
+		{61, 41, 43, 25, 34, 36, 72, 19, 1, 37, 50, 72},
+		{62, 22, 31, 31, 31, 24, 38, 39, 18, 40, 49, 57},
+		{63, 51, 14, 37, 11, 48, 38, 31, 32, 48, 52, 55},
+		{64, 37, 0, 67, 37, 15, 56, 37, 8, 36, 50, 66},
+		{65, 23, 70, 8, 24, 27, 10, 46, 29, 36, 47, 48},
+		{66, 56, 67, 50, 67, 0, 37, 37, 3, 8, 37, 64},
+		{67, 64, 12, 56, 12, 66, 15, 37, 20, 36, 37, 37},
+		{68, 30, 62, 32, 7, 44, 52, 37, 10, 37, 43, 44},
+		{69, 11, 53, 71, 0, 3, 45, 55, 30, 34, 46, 70},
+		{70, 40, 1, 9, 24, 18, 5, 44, 2, 3, 39, 54},
+		{71, 22, 9, 47, 19, 59, 34, 48, 50, 51, 56, 72},
+		{72, 56, 22, 71, 51, 50, 34, 59, 9, 19, 48, 54},
+		{73, 31, 11, 51, 38, 42, 14, 37, 32, 48, 48, 55}		
+	};
+}
